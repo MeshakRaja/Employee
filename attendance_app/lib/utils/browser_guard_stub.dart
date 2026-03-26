@@ -1,0 +1,1 @@
+void attachBeforeUnloadWarning(String message) {}
