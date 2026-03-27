@@ -18,6 +18,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoadingNotifications = false;
   String notificationsError = '';
 
+  // Use the Render URL instead of localhost
+  final String baseUrl = "https://employeeattendance-8gup.onrender.com";
+
   @override
   void initState() {
     super.initState();
@@ -32,7 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final response = await http.get(
         Uri.parse(
-          'http://127.0.0.1:5000/employees/salary/${employee['employee_id']}',
+          '$baseUrl/employees/salary/${employee['employee_id']}',
         ),
       );
       if (response.statusCode == 200) {
@@ -52,7 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ) async {
     try {
       await http.post(
-        Uri.parse('http://127.0.0.1:5000/attendance/logout'),
+        Uri.parse('$baseUrl/attendance/logout'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'employee_id': employee['employee_id']}),
       );
@@ -68,7 +71,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:5000/employees/notifications/${employee['employee_id']}'),
+        Uri.parse('$baseUrl/employees/notifications/${employee['employee_id']}'),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List;
@@ -301,7 +304,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               else
                 body['days'] = double.tryParse(daysController.text) ?? 0;
               await http.post(
-                Uri.parse('http://127.0.0.1:5000/employees/leave/apply'),
+                Uri.parse('$baseUrl/employees/leave/apply'),
                 headers: {'Content-Type': 'application/json'},
                 body: json.encode(body),
               );

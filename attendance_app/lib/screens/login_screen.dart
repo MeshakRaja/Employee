@@ -18,6 +18,9 @@ class _LoginScreenState extends State<LoginScreen>
   bool isLoading = false;
   bool isAdminSelected = false;
 
+  // Use the Render URL instead of localhost
+  final String baseUrl = "https://employeeattendance-8gup.onrender.com";
+
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
 
@@ -39,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen>
     setState(() => isLoading = true);
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/employees/login'),
+        Uri.parse('$baseUrl/employees/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'employee_id': employeeIdController.text,
@@ -57,9 +60,11 @@ class _LoginScreenState extends State<LoginScreen>
         } else {
           _showError(data['message'] ?? 'Login failed');
         }
+      } else {
+        _showError('Server error: ${response.statusCode}');
       }
     } catch (e) {
-      _showError('Connection error');
+      _showError('Connection error: Please check your internet');
     }
     setState(() => isLoading = false);
   }
@@ -68,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen>
     setState(() => isLoading = true);
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/admin/login'),
+        Uri.parse('$baseUrl/admin/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'password': adminPasswordController.text}),
       );
@@ -79,9 +84,11 @@ class _LoginScreenState extends State<LoginScreen>
         } else {
           _showError('Invalid password');
         }
+      } else {
+        _showError('Server error: ${response.statusCode}');
       }
     } catch (e) {
-      _showError('Connection error');
+      _showError('Connection error: Please check your internet');
     }
     setState(() => isLoading = false);
   }

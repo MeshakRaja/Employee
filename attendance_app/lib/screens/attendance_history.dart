@@ -14,6 +14,9 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
   List<Map<String, dynamic>> attendanceRecords = [];
   bool isLoading = true;
 
+  // Use the Render URL instead of localhost
+  final String baseUrl = "https://employeeattendance-8gup.onrender.com";
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -25,7 +28,7 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
   Future<void> fetchAttendanceHistory(String employeeId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:5000/attendance/history/$employeeId'),
+        Uri.parse('$baseUrl/attendance/history/$employeeId'),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List;

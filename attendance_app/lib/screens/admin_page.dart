@@ -7,6 +7,7 @@ import 'package:camera/camera.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
+  static const String baseUrl = "https://employeeattendance-8gup.onrender.com";
 
   @override
   _AdminPageState createState() => _AdminPageState();
@@ -176,7 +177,7 @@ class _AdminPageState extends State<AdminPage> {
   Future<void> fetchEmployees() async {
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:5000/admin/employees'),
+        Uri.parse('${AdminPage.baseUrl}/admin/employees'),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List;
@@ -196,7 +197,7 @@ class _AdminPageState extends State<AdminPage> {
   Future<void> _updateLeave(int id, String action) async {
     try {
       await http.post(
-        Uri.parse('http://127.0.0.1:5000/admin/leaves/$id'),
+        Uri.parse('${AdminPage.baseUrl}/admin/leaves/$id'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'action': action}),
       );
@@ -213,7 +214,7 @@ class _AdminPageState extends State<AdminPage> {
     }
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/employees/add'),
+        Uri.parse('${AdminPage.baseUrl}/employees/add'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'name': nameController.text,
@@ -252,7 +253,7 @@ class _AdminPageState extends State<AdminPage> {
         body['face_image'] = capturedFaceImage;
       }
       final response = await http.put(
-        Uri.parse('http://127.0.0.1:5000/admin/employees/$id'),
+        Uri.parse('${AdminPage.baseUrl}/admin/employees/$id'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(body),
       );
@@ -274,7 +275,7 @@ class _AdminPageState extends State<AdminPage> {
   Future<void> deleteEmployee(int id) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://127.0.0.1:5000/admin/employees/$id'),
+        Uri.parse('${AdminPage.baseUrl}/admin/employees/$id'),
       );
       final data = json.decode(response.body);
       ScaffoldMessenger.of(
@@ -295,7 +296,7 @@ class _AdminPageState extends State<AdminPage> {
     });
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:5000/admin/notifications'),
+        Uri.parse('${AdminPage.baseUrl}/admin/notifications'),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List;
@@ -320,7 +321,7 @@ class _AdminPageState extends State<AdminPage> {
     });
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:5000/admin/attendance/today'),
+        Uri.parse('${AdminPage.baseUrl}/admin/attendance/today'),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List;
@@ -345,7 +346,7 @@ class _AdminPageState extends State<AdminPage> {
     });
     try {
       final res = await http.get(
-        Uri.parse('http://127.0.0.1:5000/admin/leaves'),
+        Uri.parse('${AdminPage.baseUrl}/admin/leaves'),
       );
       if (res.statusCode == 200) {
         final data = json.decode(res.body) as List;
@@ -370,7 +371,7 @@ class _AdminPageState extends State<AdminPage> {
     });
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:5000/admin/salary/all'),
+        Uri.parse('${AdminPage.baseUrl}/admin/salary/all'),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List;
@@ -401,7 +402,7 @@ class _AdminPageState extends State<AdminPage> {
       context: context,
       builder: (context) {
         return FutureBuilder<http.Response>(
-          future: http.get(Uri.parse('http://127.0.0.1:5000/admin/notifications')),
+          future: http.get(Uri.parse('${AdminPage.baseUrl}/admin/notifications')),
           builder: (context, snapshot) {
             bool isLoading = snapshot.connectionState == ConnectionState.waiting;
             List localNotifs = [];

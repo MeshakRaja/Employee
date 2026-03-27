@@ -22,6 +22,9 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
   String? _capturedImageBase64;
   StreamSubscription<Position>? _positionStreamSubscription;
 
+  // Use the Render URL instead of localhost
+  final String baseUrl = "https://employeeattendance-8gup.onrender.com";
+
   static const double targetLat = 8.749176;
   static const double targetLng = 77.703413;
   static const double maxAllowedDistance = 50.0; // Allowed range: 40-50 meters
@@ -180,7 +183,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
     setState(() => isLoading = true);
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/attendance/mark'),
+        Uri.parse('$baseUrl/attendance/mark'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'employee_id': employeeId,

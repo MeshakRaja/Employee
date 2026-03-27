@@ -2,27 +2,29 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
+  // Use your live Render URL
+  static const String baseUrl = "https://employeeattendance-8gup.onrender.com";
 
-  static const baseUrl = "http://192.168.31.227:5000";
+  static Future<Map<String, dynamic>> login(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/employees/login"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "employee_id": email,
+          "password": password,
+        }),
+      ).timeout(const Duration(seconds: 60)); // Long timeout for Render's free tier
 
-  static Future login(email,password) async {
-
-    var response = await http.post(
-
-      Uri.parse("$baseUrl/student/login"),
-
-      headers: {"Content-Type":"application/json"},
-
-      body: jsonEncode({
-
-        "email":email,
-        "password":password
-
-      }),
-
-    );
-
-    return jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        // Return the error message from your Flask backend
+        return {"error": true, "message": "Login failed: ${response.statusCode}"};
+      }
+    } catch (e) {
+      // Catch network errors or timeouts
+      return {"error": true, "message": e.toString()};
+    }
   }
-
 }
