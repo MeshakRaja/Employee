@@ -17,9 +17,14 @@ FACE_DATABASE_PATH = FACE_DATA_ROOT / "attendance_face.db"
 FACE_MODEL_DIR = FACE_DATA_ROOT / "models"
 FACE_CAPTURE_DIR = FACE_DATA_ROOT / "captures"
 
-# Ensure Backend root is in sys.path so 'face_attendance' can be found
+# Ensure Backend root AND nested face_attendance root are in sys.path
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
+
+# Adding the nested folder path to sys.path
+NESTED_FACE_PATH = BACKEND_ROOT / "face_attendance"
+if str(NESTED_FACE_PATH) not in sys.path:
+    sys.path.insert(0, str(NESTED_FACE_PATH))
 
 if TYPE_CHECKING:
     from face_attendance import FaceAttendanceService
@@ -52,7 +57,8 @@ def _get_service() -> "FaceAttendanceService":
     if _service is not None:
         return _service
 
-    from face_attendance import (  # noqa: E402
+    # Import from the specific sub-folder to be safe
+    from face_attendance.face_attendance import (  # noqa: E402
         FaceAttendanceService,
         FaceModuleConfig,
         OpenCVFaceEngine,
