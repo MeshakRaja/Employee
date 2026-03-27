@@ -8,23 +8,17 @@ from typing import TYPE_CHECKING, Any, Dict
 
 import numpy as np
 
-# Updated Paths for Render compatibility
+# Paths setup
 BACKEND_ROOT = Path(__file__).resolve().parent
 APP_DATABASE_PATH = BACKEND_ROOT / "students.db"
 FACE_DATA_ROOT = BACKEND_ROOT / "face_data"
 FACE_DATABASE_PATH = FACE_DATA_ROOT / "attendance_face.db"
-# Fixed: Pointing to the correct folder where .onnx files are located
 FACE_MODEL_DIR = FACE_DATA_ROOT / "models"
 FACE_CAPTURE_DIR = FACE_DATA_ROOT / "captures"
 
-# Ensure Backend root AND nested face_attendance root are in sys.path
+# Add Backend root to sys.path so 'face_attendance' can be found
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
-
-# Adding the nested folder path to sys.path
-NESTED_FACE_PATH = BACKEND_ROOT / "face_attendance"
-if str(NESTED_FACE_PATH) not in sys.path:
-    sys.path.insert(0, str(NESTED_FACE_PATH))
 
 if TYPE_CHECKING:
     from face_attendance import FaceAttendanceService
@@ -57,8 +51,7 @@ def _get_service() -> "FaceAttendanceService":
     if _service is not None:
         return _service
 
-    # Import from the specific sub-folder to be safe
-    from face_attendance.face_attendance import (  # noqa: E402
+    from face_attendance import (
         FaceAttendanceService,
         FaceModuleConfig,
         OpenCVFaceEngine,
@@ -95,8 +88,8 @@ def enroll_employee(employee_id: str, full_name: str, image_b64: str) -> Dict[st
 
     try:
         service = _get_service()
-        # Relaxed settings for mobile captures
-        service.engine.config.detector_score_threshold = 0.35
+        # Settings for enrollment
+        service.engine.config.detector_score_threshold = 0.40
         service.engine.config.min_face_size = 20
         
         result = service.enroll_employee(
@@ -106,7 +99,7 @@ def enroll_employee(employee_id: str, full_name: str, image_b64: str) -> Dict[st
         )
         result_dict = _to_plain_value(result)
         if result_dict.get("status") != "completed":
-            return {"status": "error", "message": "No Face Detected. Use better lighting and keep phone steady."}
+            return {"status": "error", "message": "No Face Detected. Use good lighting."}
         return result_dict
     except Exception as exc:
         return {"status": "error", "message": str(exc)}
@@ -123,8 +116,8 @@ def recognize_face(
 
     try:
         service = _get_service()
-        # Ensure model is ready for recognition too
-        service.engine.config.detector_score_threshold = 0.35
+        # Ensure strict matching threshold
+        service.engine.config.detector_score_threshold = 0.45
 
         result = service.recognize(
             image_input=image_bytes,
@@ -155,11 +148,7 @@ def sync_employee_profile(
 
             if current_employee_id == new_employee_id:
                 connection.execute(
-                    """
-                    UPDATE employees
-                    SET full_name = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE employee_id = ?
-                    """,
+                    "UPDATE employees SET full_name = ?, updated_at = CURRENT_TIMESTAMP WHERE employee_id = ?",
                     (full_name, current_employee_id),
                 )
                 return {"status": "completed"}
@@ -169,43 +158,21 @@ def sync_employee_profile(
                 (new_employee_id,),
             ).fetchone()
             if target_exists is not None:
-                return {
-                    "status": "error",
-                    "message": "Face data already exists for the new employee ID",
-                }
+                return {"status": "error", "message": "Face data already exists for the new ID"}
 
             now = connection.execute("SELECT CURRENT_TIMESTAMP").fetchone()[0]
             connection.execute(
                 """
-                INSERT INTO employees (
-                    employee_id,
-                    employee_code,
-                    full_name,
-                    is_active,
-                    created_at,
-                    updated_at
-                )
+                INSERT INTO employees (employee_id, employee_code, full_name, is_active, created_at, updated_at)
                 SELECT ?, employee_code, ?, is_active, created_at, ?
-                FROM employees
-                WHERE employee_id = ?
+                FROM employees WHERE employee_id = ?
                 """,
                 (new_employee_id, full_name, now, current_employee_id),
             )
-            connection.execute(
-                "UPDATE face_embeddings SET employee_id = ? WHERE employee_id = ?",
-                (new_employee_id, current_employee_id),
-            )
-            connection.execute(
-                "UPDATE attendance_events SET employee_id = ? WHERE employee_id = ?",
-                (new_employee_id, current_employee_id),
-            )
-            connection.execute(
-                "DELETE FROM employees WHERE employee_id = ?",
-                (current_employee_id,),
-            )
+            connection.execute("UPDATE face_embeddings SET employee_id = ? WHERE employee_id = ?", (new_employee_id, current_employee_id))
+            connection.execute("UPDATE attendance_events SET employee_id = ? WHERE employee_id = ?", (new_employee_id, current_employee_id))
+            connection.execute("DELETE FROM employees WHERE employee_id = ?", (current_employee_id,))
         return {"status": "completed"}
-    except sqlite3.IntegrityError as exc:
-        return {"status": "error", "message": str(exc)}
     except Exception as exc:
         return {"status": "error", "message": str(exc)}
 
