@@ -129,6 +129,80 @@ def recognize_face(
     except Exception as exc:
         return {"status": "error", "reason": str(exc)}
 
+def sync_employee_profile(
+    current_employee_id: str,
+    new_employee_id: str,
+    full_name: str,
+) -> Dict[str, Any]:
+    try:
+        service = _get_service()
+        repository = service.repository
+        with repository._connect() as connection:
+            existing = connection.execute(
+                "SELECT employee_id FROM employees WHERE employee_id = ?",
+                (current_employee_id,),
+            ).fetchone()
+
+            if existing is None:
+                repository.upsert_employee(new_employee_id, full_name)
+                return {"status": "completed"}
+
+            if current_employee_id == new_employee_id:
+                connection.execute(
+                    """
+                    UPDATE employees
+                    SET full_name = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE employee_id = ?
+                    """,
+                    (full_name, current_employee_id),
+                )
+                return {"status": "completed"}
+
+            target_exists = connection.execute(
+                "SELECT employee_id FROM employees WHERE employee_id = ?",
+                (new_employee_id,),
+            ).fetchone()
+            if target_exists is not None:
+                return {
+                    "status": "error",
+                    "message": "Face data already exists for the new employee ID",
+                }
+
+            now = connection.execute("SELECT CURRENT_TIMESTAMP").fetchone()[0]
+            connection.execute(
+                """
+                INSERT INTO employees (
+                    employee_id,
+                    employee_code,
+                    full_name,
+                    is_active,
+                    created_at,
+                    updated_at
+                )
+                SELECT ?, employee_code, ?, is_active, created_at, ?
+                FROM employees
+                WHERE employee_id = ?
+                """,
+                (new_employee_id, full_name, now, current_employee_id),
+            )
+            connection.execute(
+                "UPDATE face_embeddings SET employee_id = ? WHERE employee_id = ?",
+                (new_employee_id, current_employee_id),
+            )
+            connection.execute(
+                "UPDATE attendance_events SET employee_id = ? WHERE employee_id = ?",
+                (new_employee_id, current_employee_id),
+            )
+            connection.execute(
+                "DELETE FROM employees WHERE employee_id = ?",
+                (current_employee_id,),
+            )
+        return {"status": "completed"}
+    except sqlite3.IntegrityError as exc:
+        return {"status": "error", "message": str(exc)}
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}
+
 def delete_employee_face(employee_id: str) -> Dict[str, Any]:
     try:
         service = _get_service()
