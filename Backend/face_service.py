@@ -13,7 +13,8 @@ BACKEND_ROOT = Path(__file__).resolve().parent
 APP_DATABASE_PATH = BACKEND_ROOT / "students.db"
 FACE_DATA_ROOT = BACKEND_ROOT / "face_data"
 FACE_DATABASE_PATH = FACE_DATA_ROOT / "attendance_face.db"
-FACE_MODEL_DIR = BACKEND_ROOT / "models" # Moved models here
+# Fixed: Pointing to the correct folder where .onnx files are located
+FACE_MODEL_DIR = FACE_DATA_ROOT / "models"
 FACE_CAPTURE_DIR = FACE_DATA_ROOT / "captures"
 
 # Ensure Backend root is in sys.path so 'face_attendance' can be found
@@ -63,7 +64,7 @@ def _get_service() -> "FaceAttendanceService":
         model_dir=FACE_MODEL_DIR,
         capture_dir=FACE_CAPTURE_DIR,
         required_samples_per_employee=1,
-        use_sface_if_available=True, # Always true for cloud
+        use_sface_if_available=True,
     )
 
     repository = SQLiteFaceAttendanceRepository(config)
@@ -72,6 +73,7 @@ def _get_service() -> "FaceAttendanceService":
     service.initialize()
 
     FACE_DATA_ROOT.mkdir(parents=True, exist_ok=True)
+    FACE_MODEL_DIR.mkdir(parents=True, exist_ok=True)
     FACE_CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
 
     _service = service
@@ -87,8 +89,8 @@ def enroll_employee(employee_id: str, full_name: str, image_b64: str) -> Dict[st
 
     try:
         service = _get_service()
-        # Relax constraints for mobile captures
-        service.engine.config.detector_score_threshold = 0.40
+        # Relaxed settings for mobile captures
+        service.engine.config.detector_score_threshold = 0.35
         service.engine.config.min_face_size = 20
         
         result = service.enroll_employee(
@@ -98,7 +100,7 @@ def enroll_employee(employee_id: str, full_name: str, image_b64: str) -> Dict[st
         )
         result_dict = _to_plain_value(result)
         if result_dict.get("status") != "completed":
-            return {"status": "error", "message": "No Face Detected. Ensure good lighting."}
+            return {"status": "error", "message": "No Face Detected. Use better lighting and keep phone steady."}
         return result_dict
     except Exception as exc:
         return {"status": "error", "message": str(exc)}
@@ -115,6 +117,9 @@ def recognize_face(
 
     try:
         service = _get_service()
+        # Ensure model is ready for recognition too
+        service.engine.config.detector_score_threshold = 0.35
+
         result = service.recognize(
             image_input=image_bytes,
             source=source,
