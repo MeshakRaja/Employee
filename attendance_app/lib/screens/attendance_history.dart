@@ -47,6 +47,22 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
     }
   }
 
+  String _formatLateTime(int minutes) {
+    if (minutes <= 0) return "";
+    if (minutes < 60) {
+      return "$minutes mins late";
+    } else {
+      int hours = minutes ~/ 60;
+      int remMinutes = minutes % 60;
+      String hourStr = hours == 1 ? "hour" : "hours";
+      if (remMinutes == 0) {
+        return "$hours $hourStr late";
+      } else {
+        return "$hours $hourStr $remMinutes mins late";
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,9 +131,8 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
                   itemCount: attendanceRecords.length,
                   itemBuilder: (context, index) {
                     final record = attendanceRecords[index];
-                    final isLate =
-                        record['late_minutes'] != null &&
-                        record['late_minutes'] > 0;
+                    final lateMinutes = record['late_minutes'] ?? 0;
+                    final isLate = lateMinutes > 0;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
@@ -200,7 +215,7 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
                                       ),
                                     ),
                                     child: Text(
-                                      '${record['late_minutes']}m Late',
+                                      _formatLateTime(lateMinutes),
                                       style: const TextStyle(
                                         color: Colors.orangeAccent,
                                         fontSize: 12,
